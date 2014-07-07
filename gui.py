@@ -48,7 +48,7 @@ class mainControlHandler:
         Gtk.Adjustment.set_value(adjustmentObject, 0)
         self.makeTrainCommand()
 
-    def makeTrainCommand(self, *args):
+    def makeTrainCommand(self):
         self.trainSpeed[0] = Gtk.SpinButton.get_value(self.spinbutton1)
         self.trainSpeed[1] = Gtk.SpinButton.get_value(self.spinbutton2)
         self.trainReverse[0] = Gtk.Switch.get_active(self.switch1)
@@ -63,7 +63,7 @@ def main():
     controller = arduinoControl("/dev/ttyACM0", 9600)
     controller.connect()
     builder = Gtk.Builder()
-    builder.add_from_file("spin_buttons.glade")
+    builder.add_from_file("gui.glade")
     signalHandler = mainControlHandler(builder, controller)
     builder.connect_signals(signalHandler)
 
