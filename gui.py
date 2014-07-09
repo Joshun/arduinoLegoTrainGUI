@@ -60,7 +60,7 @@ class mainControlHandler:
         return command
 
 def main():
-    controller = arduinoControl("/dev/ttyACM1", 9600)
+    controller = arduinoControl("/dev/ttyACM0", 9600)
     controller.connect()
     builder = Gtk.Builder()
     builder.add_from_file("gui.glade")

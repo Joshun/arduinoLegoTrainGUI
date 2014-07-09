@@ -2,6 +2,7 @@
 
 from gi.repository import Gtk
 import time
+from control import *
 
 class widgetSet:
 
@@ -38,15 +39,35 @@ class timeSet:
     def sortTimes(self):
         sorted(self.times, key=lambda element: element.etime)
     def waitTimes(self):
+        if len(self.times) < 1:
+            print('You haven\'t added any tasks!')
+            return
+
+        print('Connecting to Arduino...')
+        arduino = arduinoControl("/dev/ttyACM0", 9600)
+        arduino.connect()
+
+        currentTime = time.time()
         previousItem = self.times[0]
         num = 0
+        sleepTime = 0
         for item in self.times:
             if num == 0:
-                print('Need to sleep for:', item.etime)
+                sleepTime = item.etime - currentTime
             else:
-                print('Need to sleep for:', item.etime - previousItem.etime)
+                sleepTime = item.etime - previousItem.etime
+            if sleepTime > 0:
+                    print('Need to sleep for:', sleepTime)
+                    time.sleep(sleepTime)
+            else:
+                print('Ignoring negative time')
             num += 1
             previousItem = item
+            commandOut = item.command + '\n'
+            arduino.sendCommand(commandOut)
+            print('Response:', arduino.getResponse())
+        del self.times[:]
+
 
 class scheduler:
 
@@ -119,10 +140,16 @@ class scheduler:
         editable_struct_time[5] = second
         finalised_struct_time = tuple(editable_struct_time)
         #print('Future time:', hour, minute, second)
-        self.schedule.addElement(finalised_struct_time, command)
-        self.checkTime(finalised_struct_time)
+        #Gtk.Calendar.mark_day(calendar, day);
+
+        if self.checkTime(finalised_struct_time) is True:
+            self.schedule.addElement(finalised_struct_time, command)
+        else:
+            print('Rejected invalid time')
         self.schedule.sortTimes()
         self.schedule.printTimes()
+
+    def onCommitClicked(self, button):
         self.schedule.waitTimes()
 
     def checkTime(self, struct_time):
@@ -130,7 +157,10 @@ class scheduler:
         futureTime = time.mktime(struct_time)
         if futureTime - currentTime < 0:
             Gtk.Window.show_all(self.widgets.getWidget('invalidDateDialog'))
-    def hideInvalidDateWindow(self, button):
+            return False
+        else:
+            return True
+    def hideInvalidDateWindow(self, *args):
         Gtk.Window.hide(self.widgets.getWidget('invalidDateDialog'))
 
 def main():
